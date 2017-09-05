@@ -1,11 +1,30 @@
 # -*- coding: utf-8 -*-
 """Public forms."""
 from flask_wtf import Form
-from wtforms import PasswordField, StringField
+from wtforms import PasswordField, StringField, TextAreaField
 from wtforms.validators import DataRequired
 
 from kojak_flask.user.models import User
 
+class EditorForm(Form):
+    """Editor form."""
+    
+    content = TextAreaField('content')
+    
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    
+    def __init__(self, *args, **kwargs):
+        """Create instance."""
+        super(EditorForm, self).__init__(*args, **kwargs)
+        self.user = None
+        
+    def wordcount(self):
+        return len(self.content.data)
+    
+    def get_contents(self):
+        return self.content.data
+        
 
 class LoginForm(Form):
     """Login form."""

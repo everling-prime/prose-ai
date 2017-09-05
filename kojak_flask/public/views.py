@@ -4,7 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user
 
 from kojak_flask.extensions import login_manager
-from kojak_flask.public.forms import LoginForm
+from kojak_flask.public.forms import LoginForm, EditorForm
 from kojak_flask.user.forms import RegisterForm
 from kojak_flask.user.models import User
 from kojak_flask.utils import flash_errors
@@ -61,3 +61,33 @@ def about():
     """About page."""
     form = LoginForm(request.form)
     return render_template('public/about.html', form=form)
+
+@blueprint.route('/editor/', methods=['GET', 'POST'])
+def editor():
+    """Editor page."""
+    form = EditorForm(request.form)
+    if request.method == 'POST':
+        contents = form.get_contents()
+        tokens = contents.split("\s")
+        render_template('public/editor.html', form=form, contents="boo")
+        
+    return render_template('public/editor.html', form=form, contents="Say a few words...")
+
+
+#### Reference code only
+# Get an example and return it's score from the predictor model
+@blueprint.route('/score/', methods=["POST"])
+def score():
+    """
+    When A POST request with json data is made to this uri,
+    Read the example from the json, predict probability and
+    send it with a response
+    """
+
+    # Get decision score for our example that came with the request
+    data = flask.request.json
+    x = np.matrix(data["example"])
+    score = PREDICTOR.predict_proba(x)
+    # Put the result in a nice dict so we can send it as json
+    results = {"score": score[0,1]}
+    return flask.jsonify(results)
