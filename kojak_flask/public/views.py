@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Public section, including homepage and signup."""
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for, jsonify
 from flask_login import login_required, login_user, logout_user
 
 from kojak_flask.extensions import login_manager
@@ -8,6 +8,7 @@ from kojak_flask.public.forms import LoginForm, EditorForm
 from kojak_flask.user.forms import RegisterForm
 from kojak_flask.user.models import User
 from kojak_flask.utils import flash_errors
+from kojak_flask.nlp_magic import nlp
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
 
@@ -69,9 +70,20 @@ def editor():
     if request.method == 'POST':
         contents = form.get_contents()
         tokens = contents.split("\s")
-        render_template('public/editor.html', form=form, contents="boo")
+        return render_template('public/editor.html', form=form, output=tokens)
         
     return render_template('public/editor.html', form=form, contents="Say a few words...")
+
+@blueprint.route('/editor/textproc/', methods=['GET', 'POST'])
+def editor_textproc():
+    """Background process for Editor."""
+    try:
+        content = request.args.get('content', 0, type=str)
+        result = nlp(content)
+        #result = "You typed {} characters.".format(len(content))
+        return jsonify(result=result)
+    except Exception as e:
+        print(str(e))
 
 
 #### Reference code only

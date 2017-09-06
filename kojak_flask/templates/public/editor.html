@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script type=text/javascript>
+    $(function() {
+      $('form#editorForm').on("change keyup paste", function() {
+        $.getJSON('/editor/textproc/', {
+          content: $('textarea[name="content"]').val(),
+        }, function(data) {
+          $("#underEditor").text(data.result);
+        });
+        return false;
+      });
+    });
+</script>
+
+
+<div class="container">
+  <h1>Prose Analyzer</h1>
+    <br/>
+    <form id="editorForm" class="form" method="POST" action="/editor/" role="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+            <div name="editor_div">
+                {{ form.content(cols="60", rows="6", placeholder=contents) }}
+            </div>
+        
+        <!-- <p><input class="btn btn-default btn-submit" type="submit" value="Send Text"></p> -->
+        
+    </form>
+</div>
+
+<div>
+    <h1>Output</h1>
+    <br/>
+    <p id="underEditor">{{ output }}</p>
+
+</div>
+
+<div id="displacy">
+
+</div>
+
+<script type=text/javascript>
+    
+</script>
+
+{% endblock %}

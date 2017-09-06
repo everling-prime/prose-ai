@@ -52,7 +52,9 @@ module.exports = {
   plugins: [
     new ExtractTextPlugin('[name].[hash].css'),
     new webpack.ProvidePlugin({ $: 'jquery',
-                                jQuery: 'jquery' }),
+                                jQuery: 'jquery',
+                                Popper: 'popper.js',
+                                displaCyENT: 'displacy-ent'}),
     new ManifestRevisionPlugin(__dirname + '/kojak_flask/webpack/manifest.json', {
       rootAssetPath,
       ignorePaths: ['/js', '/css']

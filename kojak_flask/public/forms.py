@@ -9,6 +9,7 @@ from kojak_flask.user.models import User
 class EditorForm(Form):
     """Editor form."""
     
+    name = 'editor'
     content = TextAreaField('content')
     
     username = StringField('Username', validators=[DataRequired()])

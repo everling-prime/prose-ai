@@ -8,7 +8,11 @@
 require('jquery');
 require('font-awesome-webpack');
 require('bootstrap');
+require('displacy-ent');
+    
 
 // Your own code
 require('./plugins.js');
 require('./script.js');
+
+
