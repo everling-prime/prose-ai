@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """Database module, including the SQLAlchemy database object and DB-related utilities."""
 from .compat import basestring
-from .extensions import db
+from .extensions import db #SQL_Alchemy()
 
 # Alias common SQLAlchemy names
 Column = db.Column
 relationship = db.relationship
+create_engine = db.create_engine
 
 
 class CRUDMixin(object):

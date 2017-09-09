@@ -28,6 +28,10 @@ textarea {
 
 /* Forms */
 
+#quill_editor {
+    
+}
+
 .navbar-form input[type="text"],
 .navbar-form input[type="password"] {
   width: 180px;

@@ -9,7 +9,6 @@ from kojak_flask.user.models import User
 class EditorForm(Form):
     """Editor form."""
     
-    name = 'editor'
     content = TextAreaField('content')
     
     username = StringField('Username', validators=[DataRequired()])
@@ -19,9 +18,6 @@ class EditorForm(Form):
         """Create instance."""
         super(EditorForm, self).__init__(*args, **kwargs)
         self.user = None
-        
-    def wordcount(self):
-        return len(self.content.data)
     
     def get_contents(self):
         return self.content.data

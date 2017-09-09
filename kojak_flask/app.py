@@ -18,7 +18,7 @@ def create_app(config_object=ProdConfig):
     register_blueprints(app)
     register_errorhandlers(app)
     register_shellcontext(app)
-    register_commands(app)
+    register_commands(app)        
     return app
 
 

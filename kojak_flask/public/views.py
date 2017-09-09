@@ -8,9 +8,16 @@ from kojak_flask.public.forms import LoginForm, EditorForm
 from kojak_flask.user.forms import RegisterForm
 from kojak_flask.user.models import User
 from kojak_flask.utils import flash_errors
-from kojak_flask.nlp_magic import nlp
+from kojak_flask.nlp_magic import get_named_entities, strip_HTML_tags, linkify_entity
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
+
+#debugging
+import sys
+import chromelogger as console
+import logging
+LOG_FILENAME = 'views.log'
+logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
 
 
 @login_manager.user_loader
@@ -63,43 +70,27 @@ def about():
     form = LoginForm(request.form)
     return render_template('public/about.html', form=form)
 
-@blueprint.route('/editor/', methods=['GET', 'POST'])
+
+### Editor
+@blueprint.route('/editor/', methods=['GET'])
 def editor():
     """Editor page."""
-    form = EditorForm(request.form)
-    if request.method == 'POST':
-        contents = form.get_contents()
-        tokens = contents.split("\s")
-        return render_template('public/editor.html', form=form, output=tokens)
-        
-    return render_template('public/editor.html', form=form, contents="Say a few words...")
+    return render_template('public/editor.html')
 
 @blueprint.route('/editor/textproc/', methods=['GET', 'POST'])
 def editor_textproc():
-    """Background process for Editor."""
+    """Background process to return NLP results for content of Quill Editor."""
     try:
-        content = request.args.get('content', 0, type=str)
-        result = nlp(content)
-        #result = "You typed {} characters.".format(len(content))
+        text = request.args.get('content', 0, type=str)
+        linkified_named_ents = [linkify_entity(ne) for ne in get_named_entities(text)]
+        
+        #processed = nlp_magic(text)
+        
+        result = linkified_named_ents
+        #suggestions = ['alpha', 'beta', 'gamma']
         return jsonify(result=result)
+    
     except Exception as e:
-        print(str(e))
+        logging.debug(e)
+        #return redirect(url_for('public.home'))
 
-
-#### Reference code only
-# Get an example and return it's score from the predictor model
-@blueprint.route('/score/', methods=["POST"])
-def score():
-    """
-    When A POST request with json data is made to this uri,
-    Read the example from the json, predict probability and
-    send it with a response
-    """
-
-    # Get decision score for our example that came with the request
-    data = flask.request.json
-    x = np.matrix(data["example"])
-    score = PREDICTOR.predict_proba(x)
-    # Put the result in a nice dict so we can send it as json
-    results = {"score": score[0,1]}
-    return flask.jsonify(results)

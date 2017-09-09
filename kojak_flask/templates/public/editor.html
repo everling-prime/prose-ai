@@ -1,13 +1,104 @@
 {% extends "layout.html" %}
 {% block content %}
+
+<!-- ### Import external scripts ### -->
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+<!-- Main Quill library -->
+<script src="//cdn.quilljs.com/1.3.2/quill.js"></script>
+<script src="//cdn.quilljs.com/1.3.2/quill.min.js"></script>
+
+<!-- Theme included stylesheets -->
+<link href="//cdn.quilljs.com/1.3.2/quill.snow.css" rel="stylesheet">
+<link href="//cdn.quilljs.com/1.3.2/quill.bubble.css" rel="stylesheet">
+<!-- -->
+
+
+<!-- ### Begin body HTML ### -->
+<h1><i class="fa fa-pencil-square-o" aria-hidden="true"></i> 
+    Prose Genius
+</h1>
+<input type="hidden" id="typeahead_test" placeholder="test input">
+
+<br/>
+
+<!-- The editor container -->
+<div id="quill_editor">
+<!-- placeholder contents set by quill script -->
+</div>
+<script>     
+// Create new Quill Editor with options
+var options = {
+  debug: 'info',
+  modules: {
+    
+  },
+  placeholder: 'Enter a few words...',
+  theme: 'snow'
+};
+var quill = new Quill('#quill_editor', options);  
+    
+// Store accumulated changes
+var Delta = Quill.import('delta');
+var change = new Delta();
+quill.on('text-change', function(delta) {
+  change = change.compose(delta);
+});
+
+// Save periodically
+setInterval(function() {
+  if (change.length() > 0) {
+    console.log('Saving changes', change);
+    /* 
+    Send partial changes
+    $.post('/your-endpoint', { 
+      partial: JSON.stringify(change) 
+    });
+    
+    Send entire document
+    $.post('/your-endpoint', { 
+      doc: JSON.stringify(quill.getContents())
+    });
+    */
+    change = new Delta();
+  }
+}, 5*1000);
+
+// Check for unsaved data
+window.onbeforeunload = function() {
+  if (change.length() > 0) {
+    return 'There are unsaved changes. Are you sure you want to leave?';
+  }
+}
+</script>
+
+<br/>
+
+<!-- Main output container, below editor -->
+<div class="container-fluid">
+    <div class="row">
+        <h2><i class="fa fa-cogs" aria-hidden="true"></i> Output</h2>
+    </div>
+    <div class="row">
+        <p class="col-md-8" id="underEditor"></p>
+    </div>
+</div>
+
+<!-- DisplaCy container -->
+<div id="displacy">
+</div>
+
+<br/>
+
+<!-- AJAX jQuery call to send all text in editor and parse JSON response data from server-->
 <script type=text/javascript>
     $(function() {
-      $('form#editorForm').on("change keyup paste", function() {
+      $('div#quill_editor').on("change keyup", function() {
         $.getJSON('/editor/textproc/', {
-          content: $('textarea[name="content"]').val(),
-        }, function(data) {
-          $("#underEditor").text(data.result);
+          content: quill.getText(),
+        }, function(response_data) {
+          $("#underEditor").text(response_data.result); //update Output
+              //response_data.suggestions //update cycle's span items 
         });
         return false;
       });
@@ -15,34 +106,63 @@
 </script>
 
 
+
+
+
+
+
+
+<!-- Cycle display stuff -->
+<style>
+.cycle span {
+display:none
+}
+.cycle span.active {
+display:block
+}
+</style>
+
+<div class="cycle" style="display:none"> <!-- HTML container -->
+   <!-- update these values on quill_editor change -->
+    <h4>I suggest:</h4>
+                <span class="active">walking in circles</span>
+                  <span >trying too hard</span>
+                  <span >not trying hard enough</span>
+                  <span >dancing</span>
+                  <span >making strange noises</span>
+                  <span >eating a donut</span>
+</div>
+
+<script>
+//javascript to cycle display of elements
+function cycle_display() {
+  var el= document.querySelectorAll('.cycle span'),
+      rnd= Math.floor(Math.random() * el.length-1) + 1,
+      rnd2= Math.round(Math.random()*20);
+
+  document.querySelector('.cycle span.active').className= '';
+  el[rnd].className= 'active';
+  //if(rnd2===5) {
+  //  setTimeout(cycle_display, 1500);
+  //} else {
+    setTimeout(cycle_display, 100);
+  //}
+}
+//cycle_display();
+</script>
+
+<!-- Deprecated use of basic text input (WTForms)
 <div class="container">
   <h1>Prose Analyzer</h1>
-    <br/>
+    <br/> 
     <form id="editorForm" class="form" method="POST" action="/editor/" role="form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>       
             <div name="editor_div">
-                {{ form.content(cols="60", rows="6", placeholder=contents) }}
-            </div>
-        
-        <!-- <p><input class="btn btn-default btn-submit" type="submit" value="Send Text"></p> -->
-        
+                 form.content(cols="60", rows="6", placeholder=contents, autofocus=True) 
+            </div>       
+        <!-- <p><input class="btn btn-default btn-submit" type="submit" value="Submit"></p>     
     </form>
 </div>
-
-<div>
-    <h1>Output</h1>
-    <br/>
-    <p id="underEditor">{{ output }}</p>
-
-</div>
-
-<div id="displacy">
-
-</div>
-
-<script type=text/javascript>
-    
-</script>
+-->
 
 {% endblock %}
