@@ -8,7 +8,7 @@ from kojak_flask.public.forms import LoginForm, EditorForm
 from kojak_flask.user.forms import RegisterForm
 from kojak_flask.user.models import User
 from kojak_flask.utils import flash_errors
-from kojak_flask.nlp_magic import get_named_entities, strip_HTML_tags, linkify_entity
+from kojak_flask.nlp_magic import extract_named_entities, linkify_entity, get_wiki_page, create_hyperlink, extract_summary,                                       extract_keywords
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
 
@@ -82,15 +82,40 @@ def editor_textproc():
     """Background process to return NLP results for content of Quill Editor."""
     try:
         text = request.args.get('content', 0, type=str)
-        linkified_named_ents = [linkify_entity(ne) for ne in get_named_entities(text)]
+        ents = [ [ent['text']+" "] for ent in extract_named_entities(text).values()]
+        #ents = [linkify_entity(ent) for ent in extract_named_entities(text).values()]
+        #logging.debug(linkified_named_ents)
         
-        #processed = nlp_magic(text)
-        
-        result = linkified_named_ents
-        #suggestions = ['alpha', 'beta', 'gamma']
-        return jsonify(result=result)
+        return jsonify(ents=ents)
     
     except Exception as e:
         logging.debug(e)
-        #return redirect(url_for('public.home'))
+        
+@blueprint.route('/editor/textproc/linkify', methods=['GET', 'POST'])
+def linkify():
+    """Gets links for entities"""
+    try:
+        ents = request.args.get('ents', 0, type=str)
+        linkified_ents = []
+        for ent in ents:
+            ent_url = get_wiki_page(ent)['url']
+            linkified_ents.append(create_hyperlink(ent_url, ent))
+        return jsonify(linkified_ents=linkified_ents)
+    
+    except Exception as e:
+        logging.debug(e)
 
+@blueprint.route('/editor/textproc/summarize', methods=['GET', 'POST'])
+def get_summary():
+    """Returns gensim extractive summary"""
+    try:
+        text = request.args.get('content', 0, type=str)
+        
+        if len(text)<1000:
+            summary = None
+        else:
+            summary = extract_summary(text)
+        return jsonify(summary=summary)
+    
+    except Exception as e:
+        logging.debug(e)

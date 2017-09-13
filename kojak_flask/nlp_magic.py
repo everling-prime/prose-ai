@@ -1,12 +1,21 @@
+from collections import defaultdict
+
 import urllib
 from bs4 import BeautifulSoup
 
 import wikipedia
+from wikipedia import DisambiguationError, PageError, RedirectError
 
 import spacy
 import textacy
+from gensim.summarization import summarize, keywords
 
 nlp = spacy.load('en')
+
+#debugging
+#import logging
+#LOG_FILENAME = 'nlp_magic.log'
+#logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
 
 
 ### HTML-related functions
@@ -19,43 +28,32 @@ def create_hyperlink(url, display_text, attrs=""):
     hyperlink_format = '<a href="{link}" {attrs}>{text}</a>'
     return hyperlink_format.format(link=url, attrs=attrs, text=display_text)
 
-def linkify_entity(named_entity_tuple):
-    '''Operates on tuples from get_named_entities(). Returns HTML string.'''
-    ent_type, label, url = named_entity_tuple #unpacks tuple
-    attrs = 'class="{ent_type}" title="{ent_type}"'.format(ent_type=ent_type)
-    return create_hyperlink(url, label, attrs=attrs)
+def linkify_entity(ent_dict):
+    '''Operates on extracted named entities. Returns HTML string.'''
+    ent_type = ent_dict['label']
+    text = ent_dict['text'] 
+    url = get_wiki_page(text)['url']
+    attrs = 'class="{ent_type}" title="{text}"'.format(ent_type=ent_type, text=text)
+    return create_hyperlink(url, text, attrs=attrs)
 
-def get_wiki_page(search_string):
-    '''Returns URL found by searching for search_string with wikipedia wrapper library. 
+def get_wiki_page(search_string, summary=False, content=False):
+    '''Returns results from searching for search_string with wikipedia wrapper library. 
        Note: Makes a web request'''
-    page = wikipedia.page(search_string)
-    content = page.content # Content of page.
-    summary = page.summary(sentences=2)
-    return page.url, content, summary
-
-def strip_HTML_tags(html, url=None):
-    '''Removes HTML tags from raw HTML input string. 
-       Optional url parameter to scrape a given website with urllib.
-       Parses text with BeautifulSoup, splits into tokens, rejoins stripped tokens'''
-    if url:
-        html = urllib.urlopen(url).read()
-    soup = BeautifulSoup(html)
-
-    # kill all script and style elements
-    for script in soup(["script", "style"]):
-        script.extract()    # rip it out
-
-    # get text
-    text = soup.get_text()
-
-    # break into lines and remove leading and trailing space on each
-    lines = (line.strip() for line in text.splitlines())
-    # break multi-headlines into a line each
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    # drop blank lines
-    text = '\n'.join(chunk for chunk in chunks if chunk)
-
-    return text
+    try:
+        page = wikipedia.page(search_string)
+        page_data = {"url":page.url,
+                     "title":page.title}
+        if content:
+            page_data["content"] = page.content # Full text content of page.
+        if summary:
+            page_data["summary"] = page.summary # Summary section only.
+    
+    except DisambiguationError as e:
+        return get_wiki_page(e.options[0]) #naively choose first option
+    except Exception as e:
+        return None
+    
+    return page_data
 
 
 
@@ -70,17 +68,36 @@ def to_textacy_doc(raw_doc):
     '''Converts a raw string into a spaCy document, then a textacy document'''
     return textacy.Doc(nlp(raw_doc))
 
-def get_named_entities(text):
-    doc = nlp(text)
-    named_entities_tuples = []
-    for ent in doc.ents:
-        wiki_url = get_wiki_page(str(ent))[0]
-        if wiki_url:
-            named_entities_tuples.append((ent.label_, ent.text, wiki_url))
-        else:
-            named_entities_tuples.append((ent.label_, ent.text))
+def extract_named_entities(text):
+    '''Given a text document, extracts named entities using spaCy and builds a dict of metadata for each.
     
-    return named_entities_tuples
+    Example Entity Type Labels:
+    ORGANIZATION	Georgia-Pacific Corp., WHO
+    PERSON	Eddy Bonte, President Obama
+    LOCATION	Murray River, Mount Everest
+    DATE	June, 2008-06-29
+    TIME	two fifty a m, 1:30 p.m.
+    MONEY	175 million Canadian Dollars, GBP 10.40
+    PERCENT	twenty pct, 18.75 %
+    FACILITY	Washington Monument, Stonehenge
+    GPE	South East Asia, Midlothian
+    '''
+    
+    doc = nlp(text)
+    named_entities = defaultdict(dict)
+    for ent in doc.ents:
+        ent_name = ent.text
+        named_entities[ent_name]['label'] = ent.label_
+        named_entities[ent_name]['text'] = ent.text
+        wiki_url = None #get_wiki_page(str(ent))['url']
+        if wiki_url:
+            named_entities[ent_name]['url'] = wiki_url
+        
+    return named_entities
+
+def get_named_entity_data(ent_name):
+    '''Returns the metadata dictionary for a given entity'''
+    return named_entities_dict[ent_name]
 
 def get_readability_stats(doc):
     '''Gets readability stats for a textacy doc. 
@@ -98,17 +115,18 @@ def get_semantic_key_terms(doc):
     terms = [term[0] for term in term_prob_pairs]
     return terms
 
+def extract_summary(text, ratio=0.25):
+    '''Wraps gensim summarize()'''
+    return summarize(text, ratio)
 
-
-
+def extract_keywords(text):
+    '''Wraps gensim keywords(), returns a list of keyword strings'''
+    return keywords(text).split()
 
 
 def nlp_magic(text):
     '''NLP Magic: runs a standard pipeline and generates dictionary of outputs'''
-    nlp_results = []
-    
-    nlp_results.append(get_named_entities(text))
-    
+    nlp_results_dict = {}    
     
     
     return nlp_results

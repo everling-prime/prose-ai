@@ -15,10 +15,39 @@
 
 
 <!-- ### Begin body HTML ### -->
-<h1><i class="fa fa-pencil-square-o" aria-hidden="true"></i> 
-    Prose Genius
-</h1>
-<input type="hidden" id="typeahead_test" placeholder="test input">
+<div class="container">
+    <div class="row">
+        <h1><i class="fa fa-pencil-square-o" aria-hidden="true"></i> 
+            Prose AI 
+        </h1>
+
+        <i class="fa fa-eye a-eye" style="display:none"></i>
+        <i class="fa fa-eye a-eye" style="display:none"></i>
+    </div>
+</div>    
+
+<br/>
+
+<div class="container">
+    <div class="row">
+        <div>
+            Writing Style: 
+        </div>
+        <div class="style-btn-group" role="group" aria-label="Writing Style">
+          <button type="button" class="btn btn-secondary" id="reddit">Social</button>
+          <button type="button" class="btn btn-secondary" id="nytimes">News</button>
+          <button type="button" class="btn btn-secondary" id="fiction">Fiction</button>
+        </div>
+    </div>
+    <div class="row">
+        <div>
+            Topics:
+        </div>
+        <div class="col-md-6">
+            <textarea class="form-control" id="topics" rows="1" placeholder="What topics are you writing about?">machine_learning,data_science,nlp</textarea>
+        </div>
+    </div>
+</div>
 
 <br/>
 
@@ -26,12 +55,58 @@
 <div id="quill_editor">
 <!-- placeholder contents set by quill script -->
 </div>
-<script>     
+
+
+<!--
+<button id="custom-button" class="ql-omega">&#8486;</button>
+-->
+
+<style>
+.ql-omega:after {
+}
+</style>
+
+<script>
+var toolbarOptions = [
+  ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+  ['blockquote', 'code-block'],
+
+  [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+  //[{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+  //[{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+  //[{ 'direction': 'rtl' }],                         // text direction
+
+  [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+  [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+  [{ 'font': [] }],
+  [{ 'align': [] }],
+
+  ['clean'],                                         // remove formatting button
+  ['omega']
+];
+
+// Implement and register Word Count module
+Quill.register('modules/counter', function(quill, options) {
+  var container = document.querySelector('#counter');
+  quill.on('text-change', function() {
+    var text = quill.getText();
+    // There are a couple issues with counting words
+    // this way but we'll fix these later
+    word_count = text.split(/\s+/).length - 1;
+    $('.progress-bar').css('width', word_count+'%').attr('aria-valuenow', word_count);
+    $('.progress-bar').text(word_count + " words");
+  });
+});    
+
 // Create new Quill Editor with options
 var options = {
   debug: 'info',
   modules: {
-    
+    counter: true,
+    toolbar: toolbarOptions
   },
   placeholder: 'Enter a few words...',
   theme: 'snow'
@@ -72,16 +147,40 @@ window.onbeforeunload = function() {
 }
 </script>
 
+<!-- Word Count Progress Bar -->
+<div class="col-xs-12">
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="40"
+             aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>     
+    </div>
+</div>
+
 <br/>
 
 <!-- Main output container, below editor -->
-<div class="container-fluid">
+<div class="container-fluid" id="mainOutput">
     <div class="row">
-        <h2><i class="fa fa-cogs" aria-hidden="true"></i> Output</h2>
+        <h2><img 
+            src="{{url_for('static', filename='circle_head.svg')}}" 
+             alt="[Prose AI avatar]"
+             height="50px"
+             width="50px" /> </h2>
+         
     </div>
     <div class="row">
-        <p class="col-md-8" id="underEditor"></p>
+        Named Entities: <span class="col-md-8" id="entities"></span>
     </div>
+    <!-- <div class="row">
+        Wikipedia Links for your Named Entities: <span class="col-md-8" id="linkified_entities"></span>
+    </div> -->
+    <div class="row">
+        Other Output: <span class="col-md-8" id="other"></span>
+    </div>
+    <div class="row">
+        <button id="summarize" class="btn btn-primary" alt="summarize">Summarize</button>: 
+        <span class="col-md-8" id="summary"></span>
+    </div>
+    
 </div>
 
 <!-- DisplaCy container -->
@@ -92,17 +191,61 @@ window.onbeforeunload = function() {
 
 <!-- AJAX jQuery call to send all text in editor and parse JSON response data from server-->
 <script type=text/javascript>
-    $(function() {
-      $('div#quill_editor').on("change keyup", function() {
-        $.getJSON('/editor/textproc/', {
-          content: quill.getText(),
+$(function catch_quill_change() {
+  $('div#quill_editor').on("change keyup", function() {      
+    // to python backend API  
+    $.getJSON('/editor/textproc/', {
+      content: quill.getText(),
+    }, function(response_data) {
+      $("#entities").html(response_data.ents); //update Output
+          //response_data.suggestions //update cycle's span items 
+    });
+    return false;
+  });
+});
+
+// Gets extractive summary
+$(function catch_quill_change() {
+  $('button#summarize').on("click", function() {      
+    // to python backend API  
+    $.getJSON('/editor/textproc/summarize', {
+      content: quill.getText(),
+    }, function(response_data) {
+      $("#summary").html(response_data.summary); //update summary
+    });
+    return false;
+  });
+});
+    
+// checks #entities list every few seconds and tries to turn them into wikipedia links
+/*
+setInterval(function() {
+    $('#entities').text(function() {
+        $.getJSON('/editor/textproc/linkify', {
+          ents: $('#entities').text(),
         }, function(response_data) {
-          $("#underEditor").text(response_data.result); //update Output
+          $("#linkified_entities").html(response_data.linkified_ents); //update Output
               //response_data.suggestions //update cycle's span items 
         });
-        return false;
-      });
     });
+}, 3000);
+*/
+
+// toolbar
+var customButton = document.querySelector('#custom-button');
+customButton.addEventListener('click', function() {
+  var range = quill.getSelection();
+  if (range) {
+    quill.insertText(range.index, "Ω");
+  }
+});
+    
+$("#quill_editor").focusin(function() {
+    $(".a-eye").fadeIn();
+}).focusout(function () {
+    $(".a-eye").fadeOut();
+});
+
 </script>
 
 
@@ -114,6 +257,10 @@ window.onbeforeunload = function() {
 
 <!-- Cycle display stuff -->
 <style>
+.cycle {
+display:none
+}
+
 .cycle span {
 display:none
 }
@@ -122,7 +269,7 @@ display:block
 }
 </style>
 
-<div class="cycle" style="display:none"> <!-- HTML container -->
+<div class="cycle" > <!-- HTML container -->
    <!-- update these values on quill_editor change -->
     <h4>I suggest:</h4>
                 <span class="active">walking in circles</span>

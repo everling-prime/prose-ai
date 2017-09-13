@@ -28,6 +28,12 @@ textarea {
 
 /* Forms */
 
+.progress {
+  float: right;
+}
+
+
+
 #quill_editor {
     
 }
