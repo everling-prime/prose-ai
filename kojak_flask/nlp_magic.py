@@ -1,16 +1,26 @@
 from collections import defaultdict
 
 import urllib
+import requests
 from bs4 import BeautifulSoup
+from xml.etree import ElementTree
 
 import wikipedia
 from wikipedia import DisambiguationError, PageError, RedirectError
 
 import spacy
 import textacy
-from gensim.summarization import summarize, keywords
+#from gensim.summarization import summarize  # Warning: slow to load
 
 nlp = spacy.load('en')
+
+import proselint
+from proselint.tools import errors_to_json
+import json
+
+import re
+
+editor_history = []
 
 #debugging
 #import logging
@@ -56,7 +66,57 @@ def get_wiki_page(search_string, summary=False, content=False):
     return page_data
 
 
+def dbpedia_prefix_search(query_string, api_host='http://localhost:1111', query_class=''):
+    '''Returns list of dicts from dbpedia API search. Keys are: label, uri, description'''
+    api_string = api_host+"/api/search/PrefixSearch?"
+    query_class = 'QueryClass=' + query_class + "&"
+    query_string = 'QueryString=' + query_string
+    request_string = api_string + query_class + query_string
+    
+    response = requests.get(request_string)
+    xmltree = ElementTree.fromstring(response.content)
+    
+    lookup = './/{http://lookup.dbpedia.org/}'
+    results = xmltree.findall(lookup+"Result")
+    if not results:
+        return None
+    
+    results_list = []
+    for i, result in enumerate(results):
+        results_list.append({
+            'label': xmltree.findall(lookup+"Label")[i].text,
+            'uri'  : xmltree.findall(lookup+"URI")[i].text,
+            'description' : xmltree.findall(lookup+"Description")[i].text
+        })
+    return results_list
 
+def get_dbpedia_results(queries):
+    '''Given a list of query strings, returns a list of result dicts.'''
+    results = []
+    for query in queries:
+        result_for_query = dbpedia_prefix_search(query)
+        if result_for_query:
+            results.append(result_for_query[0])
+    return results
+
+def get_dbpedia_result_text(queries):
+    '''Given a list of query strings, returns a list of (label+description) strings '''
+    results = get_dbpedia_results(queries)
+    
+    results_strings = [str(r['label'] +": "+ r['description']) 
+                       for r in results if r['description']]
+    return list(set(results_strings))
+
+
+### Proselint
+def linter_suggestions(text):
+    ''' Returns suggestions as a list of dicts. Each dict is a suggestion with the following properties:
+    (check, message, line, column, start, end, extent, severity, replacements)
+    '''
+    suggestions = proselint.tools.lint(text)
+    json_string = errors_to_json(suggestions) 
+    json_dict = json.loads(json_string)
+    return json_dict['data']['errors']
 
 
 ### spaCy and Textacy functions
@@ -104,24 +164,75 @@ def get_readability_stats(doc):
        Converts doc to textacy doc first if necessary'''
     if not isinstance(doc, textacy.doc.Doc):
         doc = to_textacy_doc(doc)      
-    ts = text_stats.TextStats(doc)
+    ts = textacy.text_stats.TextStats(doc)
     return ts.readability_stats
 
-def get_semantic_key_terms(doc):
-    '''Uses textacy to get key terms from semantic network for input doc'''
+def get_semantic_key_terms(doc, top_n_terms=10, filtered=True):
+    '''Gets key terms from semantic network. '''
     if not isinstance(doc, textacy.doc.Doc):
         doc = to_textacy_doc(doc)
-    term_prob_pairs = textacy.keyterms.key_terms_from_semantic_network(doc)
-    terms = [term[0] for term in term_prob_pairs]
-    return terms
+    term_prob_pairs = textacy.keyterms.key_terms_from_semantic_network(doc,window_width=3,ranking_algo=u'pagerank')
+    max_keyterm_weight = term_prob_pairs[0][1]
+    
+    # keep keyterms if they're at least half as important as the most important keyterm
+    # term[0] is the word, term[1] is its keyterm-ness.
+    if filtered:
+        terms = [[term[0], term[1]] for term in term_prob_pairs if term[1] >= 0.5*(max_keyterm_weight)]
+    else:
+        terms = term_prob_pairs
+    
+    #textacy.keyterms.aggregate_term_variants(terms) #aggregates terms that are variations of each other
+    
+    return terms[:top_n_terms]
 
-def extract_summary(text, ratio=0.25):
+def extract_summary(text, ratio=0.1):
     '''Wraps gensim summarize()'''
     return summarize(text, ratio)
 
 def extract_keywords(text):
-    '''Wraps gensim keywords(), returns a list of keyword strings'''
-    return keywords(text).split()
+    '''Wraps textacy keywords function, returns a list of keyword strings'''
+    if len(text.split(" ")) < 3:
+        return " "
+    return textacy.keyterms.key_terms_from_semantic_network(to_textacy_doc(text))
+
+def get_sentences(doc):
+    '''Returns a list of spacy spans.'''
+    if not isinstance(doc, textacy.doc.Doc):
+        doc = to_textacy_doc(doc)
+    return list(doc.sents)
+
+#def get_completions(doc):
+#    '''Accepts string or textacy doc. Returns list of strings.'''
+#    #if not isinstance(doc, textacy.doc.Doc):
+#    #    doc = to_textacy_doc(doc)
+#    completions = []
+#    
+#    sentences = [str(sent) for sent in get_sentences(doc)]
+#    last_sent = sentences[-1]
+#    
+#    capture_pattern = "(?:##)[ \w]+(?:##)"
+#    match = re.search(capture_pattern, doc)
+#    if match: ## is the flag to suggest
+#        query = match.group(0).replace("##", "").strip()
+#        
+#        lookup = get_dbpedia_result_text([query])
+#        
+#        completions = lookup
+#    return completions
+
+def get_completions(doc):
+    '''Accepts string or textacy doc. Returns list of strings.'''
+    if not isinstance(doc, textacy.doc.Doc):
+        doc = to_textacy_doc(doc)
+    
+    ents = [str(ent) for ent in textacy.extract.named_entities(doc)]   
+    completions = get_dbpedia_result_text(ents)    
+        
+        
+        
+    return completions
+
+
 
 
 def nlp_magic(text):

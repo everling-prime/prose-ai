@@ -14,58 +14,124 @@
 <!-- -->
 
 
+<script>
+    // Implement and register Word Count module
+Quill.register('modules/counter', function(quill, options) {
+  var container = document.querySelector('#counter');
+  quill.on('text-change', function() {
+    var text = quill.getText();
+    // There are a couple issues with counting words
+    word_count = text.split(/\s+/).length - 1;
+    $('.progress-bar').css('width', word_count+'%').attr('aria-valuenow', word_count);
+    $('.progress-bar').text(word_count + " words");
+  });
+});  
+</script>
+
+
+
 <!-- ### Begin body HTML ### -->
-<div class="container">
-    <div class="row">
-        <h1><i class="fa fa-pencil-square-o" aria-hidden="true"></i> 
-            Prose AI 
-        </h1>
-
-        <i class="fa fa-eye a-eye" style="display:none"></i>
-        <i class="fa fa-eye a-eye" style="display:none"></i>
-    </div>
-</div>    
-
-<br/>
 
 <div class="container">
-    <div class="row">
-        <div>
-            Writing Style: 
-        </div>
-        <div class="style-btn-group" role="group" aria-label="Writing Style">
-          <button type="button" class="btn btn-secondary" id="reddit">Social</button>
-          <button type="button" class="btn btn-secondary" id="nytimes">News</button>
-          <button type="button" class="btn btn-secondary" id="fiction">Fiction</button>
-        </div>
-    </div>
-    <div class="row">
-        <div>
-            Topics:
-        </div>
-        <div class="col-md-6">
-            <textarea class="form-control" id="topics" rows="1" placeholder="What topics are you writing about?">machine_learning,data_science,nlp</textarea>
-        </div>
-    </div>
+    <table>
+    <tr>
+        <td id="quill_cell">
+    
+            <!-- WORD COUNT -->
+            <div class="progress">
+                <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="40"
+                     aria-valuemin="0" aria-valuemax="100" style="width:0%">
+                </div>     
+            </div>
+        
+            <!-- QUILL EDITOR -->
+            <div id="quill_editor">
+            <!-- placeholder contents set by quill script -->
+            </div>
+            
+        </td>
+        <td>
+            <div id="sidebar"></div>
+        </td>
+        
+    </tr>
+    </table>
+  
 </div>
 
 <br/>
 
-<!-- The editor container -->
-<div id="quill_editor">
-<!-- placeholder contents set by quill script -->
+<!-- Main output container, below editor -->
+<div class="container-fluid" id="mainOutput">
+    <div class="row">
+        <div class="col-md-12 spinner" align="center" id="avatar">
+        <img 
+            src="{{url_for('static', filename='circle_head.svg')}}" 
+             alt="[Prose AI avatar]"
+             height="50px"
+             width="50px" />
+        
+        </div>
+    </div>
+    
+    <hr>
+    
+    <div class="row row-m-t">
+        <div class="col-md-2 output-heading" id="completions_header">AI offers...</div>
+        <div class="col-md-10 small-text" id="completions"></div>
+    </div>
+    
+    <hr>
+    
+    <div class="row row-m-t">
+        <div class="col-md-5">
+            <div class="row">
+                <div class="col-12 output-heading">Keywords</div>
+            </div>
+            <div class="row">
+                <div class="col-12"><small>Your writing emphasizes these words / concepts:</small></div>
+            </div>
+        </div> 
+        <div class="col-md-7 bold" id="extracted_topics"></div>   
+    </div>
+    <hr>
+    <div class="row row-m-t hidden">
+        <div class="col-md-4 output-heading">Named Entities</div>
+        <div class="col-md-8" id="entities"></div>
+    </div>
+    
+    <div class="row row-m-t">
+        <div class="col-md-3 output-heading border-right" align="center"><button id="lint" class="btn btn-outline-info" alt="lint">Style Warnings:</button>
+            <br/> <br/>
+            <button id="hide_lints" class="btn btn-sm hidden" alt="Hide In-Editor Highlighting">Clear</button>
+            <br>
+            <small><a href='http://proselint.com/checks/' target="_blank">What are these?</a></small>
+ </div>
+        <div class="col-md-9" id="proselints"></div>
+        <hr> 
+    </div>
+    
+    <div class="row row-m-t">
+        <div class="col-md-4 output-heading">Other Output</div>
+        <div class="col-md-8" id="other">Creative suggestions from brown cluster words</div>
+        <hr> 
+    </div>
+    
+      
+    
+    <div class="row row-m-t">
+        <div class="col-md-3" align="center"><button id="summarize" class="btn btn-lg btn-outline-info btn-block" alt="summarize">Summarize</button> </div>
+        <div class="col-md-9" id="summary"></div>
+    </div>
+    
+    <div class="row row-m-t">
+        <div class="col-md-3 hidden" align="center" id="reada_header">Readability:</div>
+        <div class="col-md-9" id="readability"></div>
+    </div>
+    
 </div>
-
 
 <!--
-<button id="custom-button" class="ql-omega">&#8486;</button>
--->
-
-<style>
-.ql-omega:after {
-}
-</style>
-
 <script>
 var toolbarOptions = [
   ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
@@ -94,14 +160,13 @@ Quill.register('modules/counter', function(quill, options) {
   quill.on('text-change', function() {
     var text = quill.getText();
     // There are a couple issues with counting words
-    // this way but we'll fix these later
     word_count = text.split(/\s+/).length - 1;
     $('.progress-bar').css('width', word_count+'%').attr('aria-valuenow', word_count);
     $('.progress-bar').text(word_count + " words");
   });
 });    
 
-// Create new Quill Editor with options
+// Quill Editor options
 var options = {
   debug: 'info',
   modules: {
@@ -111,7 +176,14 @@ var options = {
   placeholder: 'Enter a few words...',
   theme: 'snow'
 };
-var quill = new Quill('#quill_editor', options);  
+    
+//     CREATE QUILL      //
+var quill = new Quill('#quill_editor', options);
+    
+$.get('/editor/load_contents', function(delta_response) {
+       var load = new Delta(JSON.parse(delta_response));
+       quill.setContents(load);
+       });
     
 // Store accumulated changes
 var Delta = Quill.import('delta');
@@ -124,17 +196,21 @@ quill.on('text-change', function(delta) {
 setInterval(function() {
   if (change.length() > 0) {
     console.log('Saving changes', change);
+      
     /* 
-    Send partial changes
-    $.post('/your-endpoint', { 
+    //Send partial changes
+    $.post('/editor/save_delta', { 
       partial: JSON.stringify(change) 
     });
-    
-    Send entire document
-    $.post('/your-endpoint', { 
-      doc: JSON.stringify(quill.getContents())
-    });
     */
+    
+    
+    //Send entire document
+    $.getJSON('/editor/save_contents', { 
+      contents: JSON.stringify(quill.getContents()) 
+    });
+    
+    
     change = new Delta();
   }
 }, 5*1000);
@@ -144,52 +220,23 @@ window.onbeforeunload = function() {
   if (change.length() > 0) {
     return 'There are unsaved changes. Are you sure you want to leave?';
   }
+  //if (proseai.status === 'alive') {
+  //  return 'Are you sure you want to leave this page? Prose AI will be killed.';    
+  //}
 }
 </script>
+-->
 
-<!-- Word Count Progress Bar -->
-<div class="col-xs-12">
-    <div class="progress">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="40"
-             aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>     
-    </div>
-</div>
 
-<br/>
 
-<!-- Main output container, below editor -->
-<div class="container-fluid" id="mainOutput">
-    <div class="row">
-        <h2><img 
-            src="{{url_for('static', filename='circle_head.svg')}}" 
-             alt="[Prose AI avatar]"
-             height="50px"
-             width="50px" /> </h2>
-         
-    </div>
-    <div class="row">
-        Named Entities: <span class="col-md-8" id="entities"></span>
-    </div>
-    <!-- <div class="row">
-        Wikipedia Links for your Named Entities: <span class="col-md-8" id="linkified_entities"></span>
-    </div> -->
-    <div class="row">
-        Other Output: <span class="col-md-8" id="other"></span>
-    </div>
-    <div class="row">
-        <button id="summarize" class="btn btn-primary" alt="summarize">Summarize</button>: 
-        <span class="col-md-8" id="summary"></span>
-    </div>
-    
-</div>
 
-<!-- DisplaCy container -->
-<div id="displacy">
-</div>
 
-<br/>
 
+
+
+<!-- ------------------- -->
 <!-- AJAX jQuery call to send all text in editor and parse JSON response data from server-->
+<!--
 <script type=text/javascript>
 $(function catch_quill_change() {
   $('div#quill_editor').on("change keyup", function() {      
@@ -197,21 +244,26 @@ $(function catch_quill_change() {
     $.getJSON('/editor/textproc/', {
       content: quill.getText(),
     }, function(response_data) {
-      $("#entities").html(response_data.ents); //update Output
-          //response_data.suggestions //update cycle's span items 
+      // Update output elements
+      //$("#entities").html(response_data.ents); 
+      $("#other").html(response_data.other);
     });
     return false;
   });
 });
 
 // Gets extractive summary
-$(function catch_quill_change() {
+$(function summarize() {
   $('button#summarize').on("click", function() {      
     // to python backend API  
     $.getJSON('/editor/textproc/summarize', {
       content: quill.getText(),
     }, function(response_data) {
       $("#summary").html(response_data.summary); //update summary
+      var readability = response_data.readability //JSON object of readability scores
+      var readability_ease = readability['flesch_readability_ease']
+      $("#readability").text(JSON.stringify(readability_ease));
+      $("#reada_header").removeClass("hidden");
     });
     return false;
   });
@@ -230,15 +282,59 @@ setInterval(function() {
     });
 }, 3000);
 */
+ 
+setInterval(function() {
+    $('#quill_editor').text(function() {
+        $.getJSON('/editor/textproc/get_keyterms', {
+          content: quill.getText(),
+        }, function(response_data) {
+          $("#extracted_topics").html(response_data.keyterms);
+        });
+    });
+}, 5000);
+    
 
-// toolbar
-var customButton = document.querySelector('#custom-button');
-customButton.addEventListener('click', function() {
-  var range = quill.getSelection();
-  if (range) {
-    quill.insertText(range.index, "Ω");
-  }
+$(function lint() {
+  $('button#lint').on("click", function() {       
+        $.getJSON('/editor/textproc/lint_prose', {
+            content: quill.getText(),
+        }, function(response_data) {
+            $("#proselints").empty();
+            var suggestions = response_data.proselint_suggestions;
+            suggestions.forEach(function (sugg){ 
+                //sugg = {check, message, line, column, start, end, extent, severity, replacements} 
+                
+                var sugg_replacements = sugg.replacements //usually is null
+                if (!sugg.replacements) { sugg_replacements = "" };
+                
+                $("#proselints").append('Check line '+sugg.line+': "', sugg.message + 
+                                        '"<br>' + sugg_replacements + '<hr>');
+                
+                quill.formatText(sugg.start-1, sugg.extent, 'background-color', 'yellow');  
+            } )
+            
+            $("#hide_lints").removeClass("hidden");
+        });
+    });
 });
+    
+$(function hide_lint_formats() {
+  $('button#hide_lints').on("click", function() {       
+      quill.formatText(0, quill.getLength(), 'background-color', 'white');
+      $("#proselints").empty();
+      $("#hide_lints").addClass("hidden");
+  });
+});
+
+
+// Toolbar
+//var customButton = document.querySelector('#custom-button');
+//customButton.addEventListener('click', function() {
+//  var range = quill.getSelection();
+//  if (range) {
+//    quill.insertText(range.index, "Ω");
+//  }
+//});
     
 $("#quill_editor").focusin(function() {
     $(".a-eye").fadeIn();
@@ -247,69 +343,8 @@ $("#quill_editor").focusin(function() {
 });
 
 </script>
-
-
-
-
-
-
-
-
-<!-- Cycle display stuff -->
-<style>
-.cycle {
-display:none
-}
-
-.cycle span {
-display:none
-}
-.cycle span.active {
-display:block
-}
-</style>
-
-<div class="cycle" > <!-- HTML container -->
-   <!-- update these values on quill_editor change -->
-    <h4>I suggest:</h4>
-                <span class="active">walking in circles</span>
-                  <span >trying too hard</span>
-                  <span >not trying hard enough</span>
-                  <span >dancing</span>
-                  <span >making strange noises</span>
-                  <span >eating a donut</span>
-</div>
-
-<script>
-//javascript to cycle display of elements
-function cycle_display() {
-  var el= document.querySelectorAll('.cycle span'),
-      rnd= Math.floor(Math.random() * el.length-1) + 1,
-      rnd2= Math.round(Math.random()*20);
-
-  document.querySelector('.cycle span.active').className= '';
-  el[rnd].className= 'active';
-  //if(rnd2===5) {
-  //  setTimeout(cycle_display, 1500);
-  //} else {
-    setTimeout(cycle_display, 100);
-  //}
-}
-//cycle_display();
-</script>
-
-<!-- Deprecated use of basic text input (WTForms)
-<div class="container">
-  <h1>Prose Analyzer</h1>
-    <br/> 
-    <form id="editorForm" class="form" method="POST" action="/editor/" role="form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>       
-            <div name="editor_div">
-                 form.content(cols="60", rows="6", placeholder=contents, autofocus=True) 
-            </div>       
-        <!-- <p><input class="btn btn-default btn-submit" type="submit" value="Submit"></p>     
-    </form>
-</div>
 -->
+
+
 
 {% endblock %}

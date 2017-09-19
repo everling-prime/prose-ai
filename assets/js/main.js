@@ -14,5 +14,5 @@ require('displacy-ent');
 // Your own code
 require('./plugins.js');
 require('./script.js');
-
+require('./editor.js');
 
