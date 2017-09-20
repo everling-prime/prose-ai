@@ -11,7 +11,7 @@
             <button class="navbar-toggler" data-target=".navbar-ex1-collapse"
             data-toggle="collapse" type="button"><span class="sr-only">Toggle
             navigation</span> &#x2630;</button> <a class="navbar-brand" href=
-            "{{ url_for('public.home') }}">David "Skip" Everling</a> 
+            "{{ url_for('public.home') }}"><i class="fa fa-sitemap" aria-hidden="true"></i> David "Skip" Everling</a> 
             <!-- Collect the nav links, forms, and other content for toggling
         -->
             <div class="collapse navbar-collapse navbar-ex1-collapse">
@@ -26,7 +26,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href=
-                        "{{ url_for('public.editor') }}">Editor</a>
+                        "{{ url_for('public.editor') }}">Prose AI</a>
                     </li>
                 </ul>{% if current_user and current_user.is_authenticated %}
                 <ul class="nav navbar-nav ml-auto">
@@ -41,15 +41,9 @@
                         </i></a>
                     </li>
                 </ul>
-                <div class="row">
-                    <div class="col-md-12 spinner" align="center">
-                    <img 
-                        src="{{url_for('static', filename='circle_head.svg')}}" 
-                         alt="[Prose AI avatar]"
-                         height="50px"
-                         width="50px" />
+                <div class="row">                    
 
-                    </div>
+                
                 </div>
                 {% elif form %} 
                 <!-- display login form in navbar <ul class="nav navbar-nav

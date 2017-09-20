@@ -4,6 +4,7 @@
 <!-- ### Import external scripts ### -->
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 
+
 <!-- Main Quill library -->
 <script src="//cdn.quilljs.com/1.3.2/quill.js"></script>
 <script src="//cdn.quilljs.com/1.3.2/quill.min.js"></script>
@@ -11,6 +12,8 @@
 <!-- Theme included stylesheets -->
 <link href="//cdn.quilljs.com/1.3.2/quill.snow.css" rel="stylesheet">
 <link href="//cdn.quilljs.com/1.3.2/quill.bubble.css" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css?family=Muli:400,400i,600,700,700i,800" rel="stylesheet">
 <!-- -->
 
 
@@ -32,7 +35,7 @@ Quill.register('modules/counter', function(quill, options) {
 
 <!-- ### Begin body HTML ### -->
 
-<div class="container">
+<div class="container container-wide">
     <table>
     <tr>
         <td id="quill_cell">
@@ -59,51 +62,59 @@ Quill.register('modules/counter', function(quill, options) {
   
 </div>
 
-<br/>
+
 
 <!-- Main output container, below editor -->
 <div class="container-fluid" id="mainOutput">
-    <div class="row">
+    <div class="row row-m-ts">
         <div class="col-md-12 spinner" align="center" id="avatar">
-        <img 
-            src="{{url_for('static', filename='circle_head.svg')}}" 
-             alt="[Prose AI avatar]"
-             height="50px"
-             width="50px" />
+            <!--<figure>
+                <embed type="image/svg+xml" src="{{url_for('static', filename='circle_head.svg')}}" />
+            </figure>-->
+            <img 
+                 src="{{url_for('static', filename='circle_head2.svg')}}" 
+                 alt="[Prose AI avatar]"
+                 height="50px"
+                 width="50px" />
+            
+            <div class="select-style" style="position:absolute" align="center">
+                    <select class="dropdown">
+                        <option value="keywords">KEYWORD ANALYSIS</option>
+                        <option value="all_help">ASSISTIVE INTELLIGENCE</option>
+                        <option value="knowledge">A.I. KNOWLEDGE</option>
+                        <option value="proselint">STYLE ASSIST</option>
+                        <option value="lexcat">LEXICAL ANALYSIS</option>
+                        <option value="summary">SUMMARIZE</option>
+                    </select>
+            </div>
+            
+        </div>
+        <div class="row row-m-ts">
         
         </div>
+        
     </div>
     
-    <hr>
+    <div id="top-hr"><hr ></div>
     
-    <div class="row row-m-t">
-        <div class="col-md-2 output-heading" id="completions_header">AI offers...</div>
+    <div class="row row-m-t output knowledge">
+        <div class="col-md-2 output-heading" id="completions_header">AI offers <em>context-relevant</em> knowledge:</div>
         <div class="col-md-10 small-text" id="completions"></div>
+        <hr>
     </div>
+ 
     
-    <hr>
-    
-    <div class="row row-m-t">
-        <div class="col-md-5">
-            <div class="row">
-                <div class="col-12 output-heading">Keywords</div>
-            </div>
-            <div class="row">
-                <div class="col-12"><small>Your writing emphasizes these words / concepts:</small></div>
-            </div>
-        </div> 
-        <div class="col-md-7 bold" id="extracted_topics"></div>   
-    </div>
-    <hr>
-    <div class="row row-m-t hidden">
+    <!--
+    <div class="row row-m-t output hidden">
         <div class="col-md-4 output-heading">Named Entities</div>
         <div class="col-md-8" id="entities"></div>
     </div>
+    -->
     
-    <div class="row row-m-t">
-        <div class="col-md-3 output-heading border-right" align="center"><button id="lint" class="btn btn-outline-info" alt="lint">Style Warnings:</button>
-            <br/> <br/>
-            <button id="hide_lints" class="btn btn-sm hidden" alt="Hide In-Editor Highlighting">Clear</button>
+    <div class="row row-m-t output proselint">
+        <div class="col-md-3 output-heading" align="center"><button id="lint" class="btn btn-outline-info" alt="lint">Style Warnings:</button>
+            <br/><br/>
+            <button id="hide_lints" class="btn btn-sm hidden" alt="Clear">Clear</button>
             <br>
             <small><a href='http://proselint.com/checks/' target="_blank">What are these?</a></small>
  </div>
@@ -111,24 +122,48 @@ Quill.register('modules/counter', function(quill, options) {
         <hr> 
     </div>
     
-    <div class="row row-m-t">
+    <div class="row row-m-t output other">
         <div class="col-md-4 output-heading">Other Output</div>
         <div class="col-md-8" id="other">Creative suggestions from brown cluster words</div>
-        <hr> 
+         
     </div>
     
-      
+    <div class="row row-m-t output keywords">
+        <div class="col-md-4">
+            <div class="row">
+                <div class="col-12 output-heading">Keywords</div>
+            </div>
+            <div class="row">
+                <div class="col-12"><small>Your writing emphasizes these words / concepts:</small></div>
+            </div>
+        </div> 
+        <div class="col-md-8 bold" id="extracted_topics"></div>
+        <hr>
+    </div>  
     
-    <div class="row row-m-t">
-        <div class="col-md-3" align="center"><button id="summarize" class="btn btn-lg btn-outline-info btn-block" alt="summarize">Summarize</button> </div>
+    <div class="row row-m-t output summary">
+        <div class="col-md-3" align="center"><button id="summarize" class="btn btn-lg btn-outline-info" alt="summarize">Summarize</button> </div>
         <div class="col-md-9" id="summary"></div>
     </div>
     
-    <div class="row row-m-t">
+    <div class="row row-m-t output summary">
         <div class="col-md-3 hidden" align="center" id="reada_header">Readability:</div>
-        <div class="col-md-9" id="readability"></div>
+        <div class="col-md-9 hidden" id="readability">
+            <figure>
+              <embed type="image/svg+xml" src="{{url_for('static', filename='reada_gauge.svg')}}" />
+            </figure>
+        </div>
     </div>
     
+    <div class="row row-m-t output lexcat">
+        <!--<div class="col-md-3 " align="center" id="lexcat_header">Lexical Categories:</div>-->
+        <div class="col-md-12 " id="lexcat">
+            <figure>
+              <embed type="image/svg+xml" src="{{url_for('static', filename='lexical_radar.svg')}}?xxx=12345" />
+            </figure>
+        </div>
+    </div>
+    <hr>
 </div>
 
 <!--

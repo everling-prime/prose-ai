@@ -8,7 +8,7 @@ from kojak_flask.public.forms import LoginForm, EditorForm
 from kojak_flask.user.forms import RegisterForm
 from kojak_flask.user.models import User
 from kojak_flask.utils import flash_errors
-from kojak_flask.nlp_magic import extract_named_entities, linkify_entity, get_wiki_page, create_hyperlink, extract_summary, extract_keywords, get_semantic_key_terms, linter_suggestions, to_textacy_doc, get_readability_stats, get_dbpedia_result_text, get_completions
+from kojak_flask.nlp_magic import extract_named_entities, linkify_entity, get_wiki_page, create_hyperlink, extract_summary, extract_keywords, get_semantic_key_terms, linter_suggestions, to_textacy_doc, get_readability_stats, get_dbpedia_result_text, get_completions, make_readability_gauge, make_radar, empath_analyze
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
 
@@ -152,12 +152,16 @@ def get_summary():
         text = request.args.get('content', 0, type=str)
         
         if len(text)<300:
-            summary = None
-            readability = None
+            summary = ""
+            readability = 0
         else:
             summary = extract_summary(text)
             doc = to_textacy_doc(text)
             readability = get_readability_stats(doc)
+            make_readability_gauge(doc)
+        if(len(summary)<=1):
+            summary = "I need more text to make a good summary."
+        
         return jsonify(summary=summary, readability=readability)
     
     except Exception as e:
@@ -170,10 +174,11 @@ def get_keyterms():
     """"""
     try:
         text = request.args.get('content', 0, type=str)
-        if len(text) < 10:
+        if len(text) < 5:
             return jsonify(keyterms='')
         
-        #checkbox_format = "<input type='checkbox' class='keyterm' name={kw} value='{kw}'><label for='{kw}'> {kw} </label>"
+        # Create lexical category SVG
+        make_radar(empath_analyze(text))
         
         basic_format = "<span class='keyterm' name={kw}> {kw}, </span>"
         keyterms = [basic_format.format(kw=keyword[0]) for keyword in get_semantic_key_terms(text)]

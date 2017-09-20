@@ -4,6 +4,7 @@ import urllib
 import requests
 from bs4 import BeautifulSoup
 from xml.etree import ElementTree
+from flask import url_for, send_from_directory
 
 import wikipedia
 from wikipedia import DisambiguationError, PageError, RedirectError
@@ -14,11 +15,16 @@ import textacy
 
 nlp = spacy.load('en')
 
+from empath import Empath
+lexicon = Empath()
+
 import proselint
 from proselint.tools import errors_to_json
 import json
 
 import re
+
+import pygal
 
 editor_history = []
 
@@ -152,6 +158,9 @@ def extract_named_entities(text):
         wiki_url = None #get_wiki_page(str(ent))['url']
         if wiki_url:
             named_entities[ent_name]['url'] = wiki_url
+    
+    #for np in doc.noun_chunks:
+    #    named_entities[np.text]['text'] = np.text
         
     return named_entities
 
@@ -225,14 +234,51 @@ def get_completions(doc):
     if not isinstance(doc, textacy.doc.Doc):
         doc = to_textacy_doc(doc)
     
-    ents = [str(ent) for ent in textacy.extract.named_entities(doc)]   
-    completions = get_dbpedia_result_text(ents)    
-        
-        
-        
+    ents = [str(ent) for ent in textacy.extract.named_entities(doc)]
+    noun_phrases = [str(np) for np in textacy.extract.noun_chunks(doc) if len(str(np).split(" "))>=2]
+    queries = ents + noun_phrases
+    completions = []
+    completions = get_dbpedia_result_text(queries)
+    #completions.append(get_)
+    
+    #clean up html tags in results
+    completions = [c.replace("<","&lt;") for c in completions]
+  
     return completions
 
+def empath_analyze(text):
+    '''Takes in raw text returns list of lists: [[category_name, weight],...]
+    sorted by weight, descending'''
+    empath_analysis = lexicon.analyze(text, normalize=True, tokenizer='default')
 
+    lexical_categories = [[cat[0], cat[1]] for cat in empath_analysis.items()]
+    lexical_categories.sort(key=lambda x: x[1], reverse=True)
+    return lexical_categories
+
+def make_radar(lex_cats):
+    '''Takes a list of lists e.g. [['fruit',0.02],['science',0.01]]
+       Creates an svg file called lexical_radar.svg'''
+    radar_chart = pygal.Radar()
+    radar_chart.title = 'Top 8 Lexical Categories by Proportion of Total Words'
+    lex_cats.sort(key=lambda x: x[1], reverse=True)
+    top_eight = lex_cats[:8]
+    radar_chart.x_labels = [cat[0] for cat in top_eight[::-1]]
+    radar_chart.add('Your Sample', [cat[1] for cat in top_eight[::-1]])
+    radar_chart.render_to_file('./kojak_flask/static/lexical_radar.svg', fill=True) 
+    return True
+
+def make_readability_gauge(doc):
+    '''Takes a document and creates an svg file called reada_gauge'''
+    gauge = pygal.Gauge()
+    gauge.title = 'Flesch Reading Ease Score'
+    gauge.range = [0, 100]
+    gauge.add('Your writing', get_readability_stats(doc)['flesch_readability_ease'])
+    gauge.add('Very easy to read', 100)
+    gauge.add('Average readability', 65)
+    gauge.add('A little hard to read', 35)
+    gauge.add('Very hard to read', 0)
+    gauge.render_to_file('./kojak_flask/static/reada_gauge.svg', needle_width = 1 / 10, human_readable=True)
+    return
 
 
 def nlp_magic(text):

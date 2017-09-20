@@ -89,11 +89,34 @@ window.onbeforeunload = function() {
   //}
 }
 
-$("#quill_editor").focusin(function trigger_spinner() {
-    $("#avatar").addClass("spinner");
-}).focusout(function () {
-    $("#avatar").removeClass("spinner");
+// DROPDOWN SELECT OUTPUT TO DISPLAY
+$(document).ready(function(){
+    $("select").change(function(){
+        $(this).find("option:selected").each(function(){
+            var optionValue = $(this).attr("value");
+            
+            if(optionValue){
+                if(optionValue=='all_help'){
+                    $(".output").show();
+                } else { 
+                $(".output").not("." + optionValue).hide();
+                $("." + optionValue).show();
+                }
+            } else{
+                $(".output").hide();
+            }
+        });
+    }).change();
 });
+
+
+ 
+
+
+
+
+
+
 
 
 $(function catch_quill_change() {
@@ -122,7 +145,8 @@ $(function summarize() {
       $("#summary").html(response_data.summary); //update summary
       var readability = response_data.readability //JSON object of readability scores
       var readability_ease = readability['flesch_readability_ease']
-      $("#readability").text(JSON.stringify(readability_ease));
+      //$("#readability").text(JSON.stringify(readability_ease));
+      $("#readability").removeClass("hidden");
       $("#reada_header").removeClass("hidden");
     });
     return false;
@@ -144,13 +168,15 @@ setInterval(function() {
 */
  
 setInterval(function keyterm_check() {
-    $('#quill_editor').text(function() {
-        $.getJSON('/editor/textproc/get_keyterms', {
-          content: quill.getText(),
-        }, function(response_data) {
-          $("#extracted_topics").html(response_data.keyterms);
+    //if (change.length() > 0) {
+        $('#quill_editor').text(function() {
+            $.getJSON('/editor/textproc/get_keyterms', {
+              content: quill.getText(),
+            }, function(response_data) {
+              $("#extracted_topics").html(response_data.keyterms);
+            });
         });
-    });
+    //};
 }, 5000);
 
 setInterval(function completion_check() {
@@ -173,8 +199,8 @@ setInterval(function completion_check() {
 
 //  $('div#quill_editor').on("change keyup", function() {   
 //$('button#lint').on("click", function () { 
-$(function lint() {
-  $('button#lint').on("click", function () {       
+$(function() {
+  $('button#lint').on("click", function lint () {       
         $.getJSON('/editor/textproc/lint_prose', {
             content: quill.getText(),
         }, function(response_data) {
@@ -186,18 +212,70 @@ $(function lint() {
                 var sugg_replacements = sugg.replacements //usually null
                 if (!sugg.replacements) { sugg_replacements = "" };
                 
-                $("#proselints").append('Check line '+sugg.line+': ',
-                                        sugg.check + ' --  "',
+                $("#proselints").append('Found "',
+                                        sugg.check + '" -- ',
                                         sugg.message + 
-                                        '"<br>' + sugg_replacements + '<hr>');
+                                        '<br>' + sugg_replacements + 
+                                        '<hr>');
                 
                 quill.formatText(sugg.start-1, sugg.extent-1, 'background-color', '#FED766');  
             } );
             
             $("#hide_lints").removeClass("hidden");
+            var lint = lint;
         });
     });
 });
+
+
+
+var idleTime = 0;
+$(document).ready(function () {
+    //Increment the idle time counter every minute.
+    var idleInterval = setInterval(timerIncrement, 1000); // 1 second
+
+    //Zero the idle timer on mouse movement.
+    $(this).mousemove(function (e) {
+        idleTime = 0;
+    });
+    $(this).keypress(function (e) {
+        idleTime = 0;
+    });
+});
+
+function timerIncrement() {
+    idleTime = idleTime + 1;
+    if (idleTime > 60) { // 60 seconds
+              
+        $.getJSON('/editor/textproc/lint_prose', {
+            content: quill.getText(),
+        }, function(response_data) {
+            $("#proselints").empty();
+            var suggestions = response_data.proselint_suggestions;
+            if (!suggestions[0]) { $("#proselints").text("Looks good!") };
+            suggestions.forEach(function (sugg){ 
+                //sugg = {check, message, line, column, start, end, extent, severity, replacements} 
+                var sugg_replacements = sugg.replacements //usually null
+                if (!sugg.replacements) { sugg_replacements = "" };
+                
+                $("#proselints").append('Found "',
+                                        sugg.check + '" -- ',
+                                        sugg.message + 
+                                        '<br>' + sugg_replacements + 
+                                        '<hr>');
+                
+                quill.formatText(sugg.start-1, sugg.extent-1, 'background-color', '#FED766');  
+            } );
+            
+            $("#hide_lints").removeClass("hidden");
+            var lint = lint;
+        });
+        
+    }
+}  
+
+
+
 
 
 document.getElementById("hide_lints").onclick = 
@@ -208,18 +286,19 @@ document.getElementById("hide_lints").onclick =
 };
 
 
-
-// Toolbar
-//var customButton = document.querySelector('#custom-button');
-//customButton.addEventListener('click', function() {
-//  var range = quill.getSelection();
-//  if (range) {
-//    quill.insertText(range.index, "Ω");
-//  }
-//});
-    
+/*
 $("#quill_editor").focusin(function() {
     $(".a-eye").fadeIn();
 }).focusout(function () {
     $(".a-eye").fadeOut();
 });
+*/
+
+// Make spinner active only on editor focus
+/*
+$("#quill_editor").focusin(function trigger_spinner() {
+    $("#avatar").addClass("spinner");
+}).focusout(function () {
+    $("#avatar").removeClass("spinner");
+});
+*/
