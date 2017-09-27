@@ -137,17 +137,20 @@ $(function catch_quill_change() {
 
 // Gets extractive summary
 $(function summarize() {
-  $('button#summarize').on("click", function() {      
+  $('button#summarize').on("click", function() {
+     $("#summary").empty();
+     $("#summary").addClass("spinner");
     // to python backend API  
     $.getJSON('/editor/textproc/summarize', {
       content: quill.getText(),
     }, function(response_data) {
-      $("#summary").html(response_data.summary); //update summary
+      $("#summary").html("<b>SUMMARY:</b><br>"+response_data.summary+"<br><hr>"); //update summary
       var readability = response_data.readability //JSON object of readability scores
       var readability_ease = readability['flesch_readability_ease']
       //$("#readability").text(JSON.stringify(readability_ease));
       $("#readability").removeClass("hidden");
       $("#reada_header").removeClass("hidden");
+      $("#summary").removeClass("spinner");
     });
     return false;
   });
@@ -173,7 +176,7 @@ setInterval(function keyterm_check() {
             $.getJSON('/editor/textproc/get_keyterms', {
               content: quill.getText(),
             }, function(response_data) {
-              $("#extracted_topics").html(response_data.keyterms);
+              $("#extracted_topics").html("<br>"+response_data.keyterms);
             });
         });
     //};
@@ -200,11 +203,14 @@ setInterval(function completion_check() {
 //  $('div#quill_editor').on("change keyup", function() {   
 //$('button#lint').on("click", function () { 
 $(function() {
-  $('button#lint').on("click", function lint () {       
+  $('button#lint').on("click", function lint () {
+        $("#proselints").empty();
+        $("#proselints").addClass("spinner");
         $.getJSON('/editor/textproc/lint_prose', {
             content: quill.getText(),
         }, function(response_data) {
-            $("#proselints").empty();
+            
+            $("#proselints").removeClass("spinner");
             var suggestions = response_data.proselint_suggestions;
             if (!suggestions[0]) { $("#proselints").text("Looks good!") };
             suggestions.forEach(function (sugg){ 
@@ -224,6 +230,7 @@ $(function() {
             $("#hide_lints").removeClass("hidden");
             var lint = lint;
         });
+      
     });
 });
 

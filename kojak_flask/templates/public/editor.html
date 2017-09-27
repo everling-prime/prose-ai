@@ -53,8 +53,16 @@ Quill.register('modules/counter', function(quill, options) {
             </div>
             
         </td>
-        <td>
-            <div id="sidebar"></div>
+        <td class="hidden">
+            <div id="sidebar">
+                <div class="col-md-12 spinner" align="center" id="avatar">
+                    <img 
+                     src="{{url_for('static', filename='circle_head2.svg')}}" 
+                     alt="[Prose AI avatar]"
+                     height="50px"
+                     width="50px" />
+                </div>
+            </div>
         </td>
         
     </tr>
@@ -67,22 +75,23 @@ Quill.register('modules/counter', function(quill, options) {
 <!-- Main output container, below editor -->
 <div class="container-fluid" id="mainOutput">
     <div class="row row-m-ts">
-        <div class="col-md-12 spinner" align="center" id="avatar">
+        <div class="col-md-12 " align="center" id="avatar_orig">
             <!--<figure>
                 <embed type="image/svg+xml" src="{{url_for('static', filename='circle_head.svg')}}" />
             </figure>-->
+            <!--
             <img 
                  src="{{url_for('static', filename='circle_head2.svg')}}" 
                  alt="[Prose AI avatar]"
                  height="50px"
-                 width="50px" />
+                 width="50px" /> -->
             
             <div class="select-style" style="position:absolute" align="center">
                     <select class="dropdown">
-                        <option value="keywords">KEYWORD ANALYSIS</option>
                         <option value="all_help">ASSISTIVE INTELLIGENCE</option>
+                        <option value="proselint">STYLE CHECK</option>
+                        <option value="keywords">KEYWORD ANALYSIS</option>
                         <option value="knowledge">A.I. KNOWLEDGE</option>
-                        <option value="proselint">STYLE ASSIST</option>
                         <option value="lexcat">LEXICAL ANALYSIS</option>
                         <option value="summary">SUMMARIZE</option>
                     </select>
@@ -96,14 +105,47 @@ Quill.register('modules/counter', function(quill, options) {
     </div>
     
     <div id="top-hr"><hr ></div>
-    
-    <div class="row row-m-t output knowledge">
-        <div class="col-md-2 output-heading" id="completions_header">AI offers <em>context-relevant</em> knowledge:</div>
-        <div class="col-md-10 small-text" id="completions"></div>
-        <hr>
+    <div class="row">
+        <div class="col-lg-4 output knowledge">
+            <div class="row output keywords">
+                <div class="col-md-5">
+                    <div class="row">
+                        <div class="col-12 output-heading"><i class="fa fa-key" aria-hidden="true"></i> Keywords</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12"><small>Your writing emphasizes these words / concepts:</small></div>
+                    </div>
+                </div> 
+                <div class="col-md-7 bold" id="extracted_topics"></div>
+            </div>
+            <hr>
+            <div class="row row-m-t output proselint">
+                <div class="col-md-3 output-heading" align="center"><button id="lint" class="btn btn-outline-info btn-sm" alt="lint"><i class="fa fa-check" aria-hidden="true"></i> Style</button>
+                    <br/>
+                    <small><a href='http://proselint.com/checks/' target="_blank">[Guide]</a></small>
+                    <br/>
+                    <button id="hide_lints" class="btn btn-sm hidden" alt="Clear">Clear</button>
+                    <br>
+                    
+                </div>
+                <div class="col-md-9 small-text scroll-y-short" id="proselints"></div>
+                <hr> 
+            </div>
+        </div>
+        <div class="col-lg-8 output knowledge keywords">
+            <div class="row output knowledge">
+                <!--<div class="col-md-2 output-heading" id="completions_header">AI offers <em>context-relevant</em> knowledge:</div>-->
+                <div class="row">
+                    <div class="col-md-12" align="center">
+                    <div class="output-heading"><i class="fa fa-database" aria-hidden="true"></i> Automatic Knowledge Retrieval:</div>
+                    </div>
+                </div>
+                <div class="col-md-12 small-text scroll-y" id="completions"></div>
+                <hr>
+            </div>
+        </div>
+        
     </div>
- 
-    
     <!--
     <div class="row row-m-t output hidden">
         <div class="col-md-4 output-heading">Named Entities</div>
@@ -111,6 +153,7 @@ Quill.register('modules/counter', function(quill, options) {
     </div>
     -->
     
+    <!--
     <div class="row row-m-t output proselint">
         <div class="col-md-3 output-heading" align="center"><button id="lint" class="btn btn-outline-info" alt="lint">Style Warnings:</button>
             <br/><br/>
@@ -118,32 +161,21 @@ Quill.register('modules/counter', function(quill, options) {
             <br>
             <small><a href='http://proselint.com/checks/' target="_blank">What are these?</a></small>
  </div>
-        <div class="col-md-9" id="proselints"></div>
+        <div class="col-md-9 border-top" id="proselints"></div>
         <hr> 
     </div>
+    -->
     
+    <!--
     <div class="row row-m-t output other">
         <div class="col-md-4 output-heading">Other Output</div>
         <div class="col-md-8" id="other">Creative suggestions from brown cluster words</div>
-         
-    </div>
+    </div>-->
     
-    <div class="row row-m-t output keywords">
-        <div class="col-md-4">
-            <div class="row">
-                <div class="col-12 output-heading">Keywords</div>
-            </div>
-            <div class="row">
-                <div class="col-12"><small>Your writing emphasizes these words / concepts:</small></div>
-            </div>
-        </div> 
-        <div class="col-md-8 bold" id="extracted_topics"></div>
-        <hr>
-    </div>  
     
-    <div class="row row-m-t output summary">
-        <div class="col-md-3" align="center"><button id="summarize" class="btn btn-lg btn-outline-info" alt="summarize">Summarize</button> </div>
-        <div class="col-md-9" id="summary"></div>
+    <div class="row row-m-t border-top output summary">
+        <div class="col-md-4" align="center"><br><button id="summarize" class="btn btn-lg btn-outline-info btn-block" alt="summarize"><i class="fa fa-sort-amount-desc" aria-hidden="true"></i> Summarize</button> </div>
+        <div class="col-md-8 " id="summary"></div>
     </div>
     
     <div class="row row-m-t output summary">
@@ -155,11 +187,11 @@ Quill.register('modules/counter', function(quill, options) {
         </div>
     </div>
     
-    <div class="row row-m-t output lexcat">
+    <div class="row row-m-t output lexcat hidden">
         <!--<div class="col-md-3 " align="center" id="lexcat_header">Lexical Categories:</div>-->
-        <div class="col-md-12 " id="lexcat">
+        <div class="col-md-12 hidden" id="lexcat">
             <figure>
-              <embed type="image/svg+xml" src="{{url_for('static', filename='lexical_radar.svg')}}?xxx=12345" />
+              <embed type="image/svg+xml" src="{{url_for('static', filename='lexical_histogram.svg')}}?xxx=12345" />
             </figure>
         </div>
     </div>

@@ -11,7 +11,7 @@ from wikipedia import DisambiguationError, PageError, RedirectError
 
 import spacy
 import textacy
-#from gensim.summarization import summarize  # Warning: slow to load
+from gensim.summarization import summarize  # Warning: slow to load
 
 nlp = spacy.load('en')
 
@@ -265,6 +265,19 @@ def make_radar(lex_cats):
     radar_chart.x_labels = [cat[0] for cat in top_eight[::-1]]
     radar_chart.add('Your Sample', [cat[1] for cat in top_eight[::-1]])
     radar_chart.render_to_file('./kojak_flask/static/lexical_radar.svg', fill=True) 
+    return True
+
+def make_hist(lex_cats):
+    '''Takes a list of lists e.g. [['fruit',0.02],['science',0.01]]
+       Creates an svg file called lexical_histogram.svg.'''
+    lex_cats.sort(key=lambda x: x[1], reverse=True)
+    top_eight = lex_cats[:8]
+    
+    hist = pygal.Histogram()
+    for i, cat in enumerate(top_eight):
+        #hist.add(name, [(height, start, stop)])
+        hist.add(cat[0], [(cat[1],i+1,i+2)])
+    hist.render_to_file('./kojak_flask/static/lexical_histogram.svg')
     return True
 
 def make_readability_gauge(doc):
