@@ -1,0 +1,1 @@
+{"ops":[{"attributes":{"background":"white"},"insert":"I'm helping to create an app for BBC 100 Women that will help people to speak up in meetings if they have "},{"attributes":{"background":"#fed766"},"insert":"Imposter"},{"attributes":{"background":"white"},"insert":" Syndrome. "},{"insert":"\n\n\n"}]}
