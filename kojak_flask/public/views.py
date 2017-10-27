@@ -151,7 +151,7 @@ def get_summary():
     try:
         text = request.args.get('content', 0, type=str)
         
-        if len(text)<300:
+        if len(text)<250:
             summary = ""
             readability = 0
         else:
