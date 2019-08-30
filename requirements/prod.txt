@@ -73,7 +73,7 @@ Unidecode==0.4.21
 urllib3==1.22
 wcwidth==0.1.7
 webencodings==0.5.1
-Werkzeug==0.12.2
+Werkzeug==0.15.3
 wikipedia==1.4.0
 wrapt==1.10.11
 WTForms==2.1
