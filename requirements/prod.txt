@@ -37,7 +37,7 @@ ijson==2.3
 itsdangerous==0.24
 Jinja2==2.9.6
 jsonpickle==0.9.5
-Mako==1.0.7
+Mako==1.2.2
 MarkupSafe==1.0
 murmurhash==0.26.4
 networkx==2.0
