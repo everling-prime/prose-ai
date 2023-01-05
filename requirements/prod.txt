@@ -70,7 +70,7 @@ toolz==0.8.2
 tqdm==4.19.2
 ujson==1.35
 Unidecode==0.4.21
-urllib3==1.24.2
+urllib3==1.26.5
 wcwidth==0.1.7
 webencodings==0.5.1
 Werkzeug==0.15.3
