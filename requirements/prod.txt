@@ -41,7 +41,7 @@ Mako==1.0.7
 MarkupSafe==1.0
 murmurhash==0.26.4
 networkx==2.0
-numpy==1.13.3
+numpy==1.22.0
 pathlib==1.0.1
 pipreqs==0.4.9
 plac==0.9.6
